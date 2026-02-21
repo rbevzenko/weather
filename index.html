@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Мониторинг погоды</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d0d14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Погода" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -185,15 +194,31 @@
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
     }
-    .flag { font-size: 1.3rem; }
+    .flag {
+      width: 28px;
+      height: 21px;
+      border-radius: 3px;
+      object-fit: cover;
+      box-shadow: 0 1px 4px rgba(0,0,0,.4);
+      flex-shrink: 0;
+    }
 
     .local-time {
-      font-size: 0.75rem;
-      color: var(--text-2);
-      margin-top: 5px;
+      font-size: 1.45rem;
+      font-weight: 300;
+      letter-spacing: 1px;
       font-variant-numeric: tabular-nums;
+      color: var(--text-1);
+      margin-top: 6px;
+      line-height: 1;
+    }
+    .local-date {
+      font-size: 0.72rem;
+      color: var(--text-2);
+      margin-top: 3px;
+      letter-spacing: .3px;
     }
 
     .weather-emoji {
@@ -272,8 +297,12 @@
     <div class="overlay"><div class="loader"></div></div>
     <div class="card-head">
       <div>
-        <div class="city-name"><span class="flag">🇷🇺</span> Москва</div>
+        <div class="city-name">
+          <img class="flag" src="https://flagcdn.com/32x24/ru.png" alt="Россия" />
+          Москва
+        </div>
         <div class="local-time" id="time-moscow">--:--:--</div>
+        <div class="local-date" id="date-moscow">--</div>
       </div>
       <div class="weather-emoji" id="icon-moscow">…</div>
     </div>
@@ -299,8 +328,12 @@
     <div class="overlay"><div class="loader"></div></div>
     <div class="card-head">
       <div>
-        <div class="city-name"><span class="flag">🇨🇾</span> Фамагуста</div>
+        <div class="city-name">
+          <img class="flag" src="https://flagcdn.com/32x24/cy.png" alt="Кипр" />
+          Фамагуста
+        </div>
         <div class="local-time" id="time-famagusta">--:--:--</div>
+        <div class="local-date" id="date-famagusta">--</div>
       </div>
       <div class="weather-emoji" id="icon-famagusta">…</div>
     </div>
@@ -326,8 +359,12 @@
     <div class="overlay"><div class="loader"></div></div>
     <div class="card-head">
       <div>
-        <div class="city-name"><span class="flag">🇪🇸</span> Барселона</div>
+        <div class="city-name">
+          <img class="flag" src="https://flagcdn.com/32x24/es.png" alt="Испания" />
+          Барселона
+        </div>
         <div class="local-time" id="time-barcelona">--:--:--</div>
+        <div class="local-date" id="date-barcelona">--</div>
       </div>
       <div class="weather-emoji" id="icon-barcelona">…</div>
     </div>
@@ -351,7 +388,7 @@
 
 <footer>
   Данные: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo API</a>
-  &nbsp;·&nbsp; Автообновление каждые 10 минут
+  &nbsp;·&nbsp; Автообновление каждые 5 минут
 </footer>
 
 <script>
@@ -498,9 +535,16 @@ function renderCard(city, data) {
 
 /* ── CLOCKS ──────────────────────────────────────────────────────── */
 function tickClocks() {
+  const now = new Date();
   CITIES.forEach(c => {
-    const el = document.getElementById(`time-${c.id}`);
-    if (el) el.textContent = localTime(c.tz);
+    const timeEl = document.getElementById(`time-${c.id}`);
+    const dateEl = document.getElementById(`date-${c.id}`);
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('ru-RU', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: c.tz,
+    });
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('ru-RU', {
+      weekday: 'short', day: 'numeric', month: 'short', timeZone: c.tz,
+    });
   });
 }
 
@@ -547,7 +591,12 @@ tickClocks();
 setInterval(tickClocks, 1000);
 
 refreshAll();
-setInterval(refreshAll, 10 * 60 * 1000);   /* auto-refresh every 10 min */
+setInterval(refreshAll, 5 * 60 * 1000);    /* auto-refresh every 5 min */
+
+/* ── SERVICE WORKER ──────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
